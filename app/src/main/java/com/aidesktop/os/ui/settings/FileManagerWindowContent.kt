@@ -64,7 +64,7 @@ fun FileManagerWindowContent() {
                 Text("Open Folder")
             }
         }
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(modifier = Modifier.weight(1f).fillMaxWidth()) {
             items(openedItems) { uri ->
                 Row(
                     verticalAlignment = Alignment.CenterVertically,

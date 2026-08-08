@@ -2,6 +2,7 @@ package com.aidesktop.os.ui.settings
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,7 +16,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -35,6 +35,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.aidesktop.os.ui.desktop.window.SubWindow
 import com.aidesktop.os.ui.theme.AccentBlue
 import com.aidesktop.os.ui.theme.AccentRed
 import com.aidesktop.os.ui.theme.DesktopSurfaceElevated
@@ -54,6 +55,11 @@ fun AccountsWindowContent(viewModel: AccountsViewModel = hiltViewModel()) {
     val accounts by viewModel.accounts.collectAsState()
     var showAddDialog by remember { mutableStateOf(false) }
 
+    // Outer Box so the SubWindow overlays (added below) can stack on TOP of
+    // the normal content instead of pushing it aside like another Column
+    // child would — while still being confined to this same fillMaxSize
+    // area, i.e. inside this window and nowhere else.
+    Box(modifier = Modifier.fillMaxSize()) {
     Column(modifier = Modifier.fillMaxSize().background(DesktopSurfaceElevated).padding(12.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text("ID Vault", color = TextPrimary, style = MaterialTheme.typography.titleLarge)
@@ -68,7 +74,7 @@ fun AccountsWindowContent(viewModel: AccountsViewModel = hiltViewModel()) {
             modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)
         )
 
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(modifier = Modifier.weight(1f).fillMaxWidth()) {
             items(accounts) { account ->
                 Row(
                     modifier = Modifier
@@ -102,19 +108,23 @@ fun AccountsWindowContent(viewModel: AccountsViewModel = hiltViewModel()) {
             Text("Reveal a saved credential")
         }
 
+    }
+
         when (val result = viewModel.opResult.value) {
-            is CredentialOpResult.Retrieved -> AlertDialog(
-                onDismissRequest = viewModel::clearResult,
-                confirmButton = { TextButton(onClick = viewModel::clearResult) { Text("Close") } },
-                title = { Text("Saved credential") },
-                text = { Text("Username: ${result.username}\nPassword: ${result.password}") }
-            )
-            is CredentialOpResult.Error -> AlertDialog(
-                onDismissRequest = viewModel::clearResult,
-                confirmButton = { TextButton(onClick = viewModel::clearResult) { Text("OK") } },
-                title = { Text("Couldn't complete that") },
-                text = { Text(result.message) }
-            )
+            is CredentialOpResult.Retrieved -> SubWindow(
+                title = "Saved credential",
+                onClose = viewModel::clearResult,
+                confirmButton = { TextButton(onClick = viewModel::clearResult) { Text("Close") } }
+            ) {
+                Text("Username: ${result.username}\nPassword: ${result.password}", color = TextPrimary)
+            }
+            is CredentialOpResult.Error -> SubWindow(
+                title = "Couldn't complete that",
+                onClose = viewModel::clearResult,
+                confirmButton = { TextButton(onClick = viewModel::clearResult) { Text("OK") } }
+            ) {
+                Text(result.message, color = TextPrimary)
+            }
             CredentialOpResult.Saved -> {
                 showAddDialog = false
                 viewModel.clearResult()
@@ -145,26 +155,25 @@ private fun AddAccountDialog(
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Add account") },
-        text = {
-            Column {
-                OutlinedTextField(value = label, onValueChange = { label = it }, label = { Text("Label (e.g. GitHub)") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(value = site, onValueChange = { site = it }, label = { Text("Site (e.g. github.com)") }, modifier = Modifier.fillMaxWidth().padding(top = 6.dp))
-                OutlinedTextField(value = username, onValueChange = { username = it }, label = { Text("Username or email") }, modifier = Modifier.fillMaxWidth().padding(top = 6.dp))
-                OutlinedTextField(
-                    value = password,
-                    onValueChange = { password = it },
-                    label = { Text("Password") },
-                    visualTransformation = PasswordVisualTransformation(),
-                    modifier = Modifier.fillMaxWidth().padding(top = 6.dp)
-                )
-            }
-        },
+    SubWindow(
+        title = "Add account",
+        onClose = onDismiss,
         confirmButton = {
             TextButton(enabled = !isBusy, onClick = { onConfirm(label, site, username, password) }) { Text("Save") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
-    )
+    ) {
+        Column {
+            OutlinedTextField(value = label, onValueChange = { label = it }, label = { Text("Label (e.g. GitHub)") }, modifier = Modifier.fillMaxWidth())
+            OutlinedTextField(value = site, onValueChange = { site = it }, label = { Text("Site (e.g. github.com)") }, modifier = Modifier.fillMaxWidth().padding(top = 6.dp))
+            OutlinedTextField(value = username, onValueChange = { username = it }, label = { Text("Username or email") }, modifier = Modifier.fillMaxWidth().padding(top = 6.dp))
+            OutlinedTextField(
+                value = password,
+                onValueChange = { password = it },
+                label = { Text("Password") },
+                visualTransformation = PasswordVisualTransformation(),
+                modifier = Modifier.fillMaxWidth().padding(top = 6.dp)
+            )
+        }
+    }
 }

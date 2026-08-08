@@ -15,11 +15,19 @@ enum class AppKind {
     ACCOUNTS
 }
 
-/** Which visual state a window is currently in. */
+/**
+ * Which visual state a window is currently in.
+ * BUBBLE is only ever used by the AI Assistant window: instead of being
+ * tucked into the taskbar like a normal minimize, it collapses to a small
+ * floating draggable circle that stays on top of every other window, so it's
+ * always one tap away no matter what else is open (see DesktopScreen's
+ * AiChatBubble + DesktopController.minimize's AI_CHAT special-case).
+ */
 enum class WindowVisualState {
     NORMAL,
     MAXIMIZED,
-    MINIMIZED
+    MINIMIZED,
+    BUBBLE
 }
 
 /** Runtime state for a single desktop window. Lives in DesktopViewModel, not persisted. */
@@ -39,4 +47,10 @@ data class WindowState(
     var splitSlot: SplitSlot? = null
 )
 
-enum class SplitSlot { LEFT, RIGHT, NONE }
+/** Which quadrant/half of a split-screen layout a window occupies. LEFT/RIGHT
+ *  split the desktop with a vertical divider in the middle; TOP/BOTTOM split
+ *  it with a horizontal divider. */
+enum class SplitSlot { LEFT, RIGHT, TOP, BOTTOM, NONE }
+
+/** Orientation for a two-window split, chosen by whoever triggers the split. */
+enum class SplitOrientation { VERTICAL, HORIZONTAL }

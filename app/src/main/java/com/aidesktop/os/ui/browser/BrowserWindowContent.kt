@@ -22,6 +22,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.key
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.zIndex
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bookmark
@@ -160,22 +163,73 @@ private class AutomationBridge(private val controller: BrowserController, privat
     }
 }
 
+/**
+ * Renders every open tab's WebView, not just the active one, and keeps all of
+ * them alive underneath — only the active tab is visible/on-top/hit-testable.
+ *
+ * Why: there used to be exactly ONE AndroidView/WebView here, keyed off
+ * whatever `viewModel.activeTab()` returned. Switching tabs (e.g. the AI
+ * opening a WhatsApp tab while a YouTube tab was still mid-playback) did NOT
+ * create a second WebView — it re-pointed that same single WebView at the new
+ * tab's URL, `loadUrl`-ing away from whatever was live on the previous tab.
+ * That's the exact bug behind "song ke liye browser khula phir dusra task bhi
+ * usi me hone laga": with only one real WebView under the hood, two "tabs"
+ * were never actually independent, no matter how separate they looked in the
+ * tab bar. Each tab now gets its own persistent WebView the same way a
+ * minimized window stays composed instead of being torn down (see
+ * DesktopScreen) — so a song can keep playing in a background tab while a
+ * different tab is used for something else.
+ */
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
 private fun WebViewContent(viewModel: BrowserViewModel) {
-    val context = LocalContext.current
-    val tab = viewModel.activeTab()
-    val controller = viewModel.browserController
+    val activeTabId = viewModel.activeTabId.value
+    Box(modifier = Modifier.fillMaxSize()) {
+        viewModel.tabs.forEach { tab ->
+            key(tab.id) {
+                val isActive = tab.id == activeTabId
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .zIndex(if (isActive) 1f else 0f)
+                        // Inactive tabs are visually hidden and excluded from hit
+                        // testing, but stay fully composed/alive underneath.
+                        .then(if (isActive) Modifier else Modifier.alpha(0f))
+                ) {
+                    SingleTabWebView(viewModel = viewModel, tabId = tab.id, isActive = isActive)
+                }
+            }
+        }
+    }
+}
 
-    // Composition now survives minimize (see DesktopScreen's off-screen-park fix), so this
-    // DisposableEffect only fires when the tab or window is actually closed — exactly when
-    // we want the registry entry (and any pending automation) cleaned up.
-    DisposableEffect(tab.id) {
-        onDispose { controller.unregisterWebView(tab.id) }
+@SuppressLint("SetJavaScriptEnabled")
+@Composable
+private fun SingleTabWebView(viewModel: BrowserViewModel, tabId: String, isActive: Boolean) {
+    val context = LocalContext.current
+    val controller = viewModel.browserController
+    val tab = viewModel.tabs.firstOrNull { it.id == tabId } ?: return
+
+    // Fires only when this specific tab is actually closed (removed from the
+    // tabs list) or the window itself is torn down — a background/inactive
+    // tab switching visibility does NOT dispose it, so its automation/session
+    // survives exactly like a minimized window's does.
+    DisposableEffect(tabId) {
+        onDispose { controller.unregisterWebView(tabId) }
     }
 
     AndroidView(
         modifier = Modifier.fillMaxSize(),
+        // Consumed by hit-testing: an inactive tab sits at alpha 0 behind the
+        // active one, so it must not intercept touches meant for it.
+        update = { webView ->
+            webView.isClickable = isActive
+            webView.isFocusable = isActive
+            controller.registerWebView(tabId, webView)
+            if (webView.url != tab.url) {
+                webView.loadUrl(tab.url)
+            }
+        },
         factory = {
             WebView(context).apply {
                 layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
@@ -183,6 +237,13 @@ private fun WebViewContent(viewModel: BrowserViewModel) {
                 settings.domStorageEnabled = true
                 settings.loadWithOverviewMode = true
                 settings.useWideViewPort = true
+                // Without this, Android WebView blocks video.play() unless it was
+                // triggered by a real finger-tap — a synthetic JS click (what the
+                // AI automation does) does not count, so YouTube would load a
+                // video and sit paused on it forever. This is what let real
+                // playback (and therefore the ad-skip watcher, which only ever
+                // sees ads once a video is actually playing) actually start.
+                settings.mediaPlaybackRequiresUserGesture = false
                 // Force desktop layout/experience across all sites, as required
                 settings.userAgentString = DESKTOP_USER_AGENT
 
@@ -191,22 +252,16 @@ private fun WebViewContent(viewModel: BrowserViewModel) {
                 CookieManager.getInstance().setAcceptCookie(true)
                 CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
 
-                addJavascriptInterface(AutomationBridge(controller, tab.id), "AndroidAutomation")
+                addJavascriptInterface(AutomationBridge(controller, tabId), "AndroidAutomation")
 
                 webViewClient = object : WebViewClient() {
                     override fun onPageFinished(view: WebView, url: String) {
-                        viewModel.onPageLoaded(tab.id, url, view.title ?: url)
+                        viewModel.onPageLoaded(tabId, url, view.title ?: url)
                         CookieManager.getInstance().flush()
                     }
                 }
                 loadUrl(tab.url)
-                controller.registerWebView(tab.id, this)
-            }
-        },
-        update = { webView ->
-            controller.registerWebView(tab.id, webView)
-            if (webView.url != tab.url) {
-                webView.loadUrl(tab.url)
+                controller.registerWebView(tabId, this)
             }
         }
     )

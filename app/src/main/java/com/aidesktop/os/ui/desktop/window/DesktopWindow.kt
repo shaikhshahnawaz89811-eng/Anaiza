@@ -1,6 +1,7 @@
 package com.aidesktop.os.ui.desktop.window
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -60,6 +61,11 @@ fun DesktopWindow(
             .shadow(12.dp, RoundedCornerShape(10.dp))
             .clip(RoundedCornerShape(10.dp))
             .background(WindowChrome)
+            // Every window now draws its own 1dp edge, same as the outer
+            // desktop frame and the split-screen divider, so each window
+            // reads as a clearly bordered pane on its own — not just a
+            // shadow fading into the wallpaper.
+            .border(1.dp, DividerColor, RoundedCornerShape(10.dp))
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             // Content area

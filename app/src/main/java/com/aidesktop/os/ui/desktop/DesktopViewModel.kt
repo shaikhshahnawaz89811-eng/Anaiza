@@ -25,6 +25,12 @@ class DesktopViewModel @Inject constructor(
     val windows get() = controller.windows
     val isStartMenuOpen get() = controller.isStartMenuOpen
     val isNotificationCenterOpen get() = controller.isNotificationCenterOpen
+    val bubblePosition get() = controller.bubblePosition
+    /** True while the AI chat is docked open as the top panel (not bubble). */
+    val isAiPanelOpen get() = controller.isAiPanelOpen
+
+    fun moveBubble(delta: Offset) = controller.moveBubble(delta)
+    fun expandAiChatBubble() = controller.expandAiChatBubble()
 
     fun appDefinitions() = controller.appDefinitions()
 

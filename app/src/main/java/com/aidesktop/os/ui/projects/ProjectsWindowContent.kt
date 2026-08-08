@@ -56,7 +56,7 @@ fun ProjectsWindowContent(viewModel: ProjectsViewModel = hiltViewModel()) {
             NewProjectForm(onCreate = viewModel::createProject)
         }
 
-        LazyColumn(modifier = Modifier.fillMaxSize().padding(top = 8.dp)) {
+        LazyColumn(modifier = Modifier.weight(1f).fillMaxWidth().padding(top = 8.dp)) {
             items(projects) { project ->
                 Column(
                     modifier = Modifier

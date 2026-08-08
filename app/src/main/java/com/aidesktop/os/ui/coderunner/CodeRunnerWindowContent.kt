@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -18,7 +19,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -39,6 +39,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.aidesktop.os.data.remote.PistonRuntime
+import com.aidesktop.os.ui.desktop.window.SubWindow
 import com.aidesktop.os.ui.theme.AccentRed
 
 import androidx.compose.foundation.clickable
@@ -171,6 +172,7 @@ fun CodeRunnerWindowContent(viewModel: CodeRunnerViewModel = hiltViewModel()) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 8.dp)
+                    .heightIn(max = 220.dp)
                     .clip(RoundedCornerShape(8.dp))
                     .background(TerminalPanelBg)
                     .padding(10.dp)
@@ -259,26 +261,9 @@ private fun GitHubTokenDialog(
     onForget: () -> Unit
 ) {
     var token by remember { mutableStateOf("") }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("GitHub Personal Access Token") },
-        text = {
-            Column {
-                Text(
-                    "Needs \"contents: write\" permission on the repos you'll push to. Stored encrypted on this device only.",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.labelSmall,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-                OutlinedTextField(
-                    value = token,
-                    onValueChange = { token = it },
-                    label = { Text("Token") },
-                    placeholder = { Text("ghp_...") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-        },
+    SubWindow(
+        title = "GitHub Personal Access Token",
+        onClose = onDismiss,
         confirmButton = { TextButton(onClick = { onSave(token) }, enabled = token.isNotBlank()) { Text("Save") } },
         dismissButton = {
             Row {
@@ -286,7 +271,23 @@ private fun GitHubTokenDialog(
                 TextButton(onClick = onDismiss) { Text("Cancel") }
             }
         }
-    )
+    ) {
+        Column {
+            Text(
+                "Needs \"contents: write\" permission on the repos you'll push to. Stored encrypted on this device only.",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.labelSmall,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            OutlinedTextField(
+                value = token,
+                onValueChange = { token = it },
+                label = { Text("Token") },
+                placeholder = { Text("ghp_...") },
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
 }
 
 @Composable
@@ -301,18 +302,12 @@ private fun PushToGitHubDialog(
     var path by remember { mutableStateOf("") }
     var message by remember { mutableStateOf("") }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Push to GitHub") },
-        text = {
-            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                OutlinedTextField(value = owner, onValueChange = { owner = it }, label = { Text("Owner") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(value = repo, onValueChange = { repo = it }, label = { Text("Repository") }, modifier = Modifier.fillMaxWidth().padding(top = 6.dp))
-                OutlinedTextField(value = branch, onValueChange = { branch = it }, label = { Text("Branch") }, modifier = Modifier.fillMaxWidth().padding(top = 6.dp))
-                OutlinedTextField(value = path, onValueChange = { path = it }, label = { Text("File path (e.g. src/main.py)") }, modifier = Modifier.fillMaxWidth().padding(top = 6.dp))
-                OutlinedTextField(value = message, onValueChange = { message = it }, label = { Text("Commit message") }, modifier = Modifier.fillMaxWidth().padding(top = 6.dp))
-            }
-        },
+    // Note: SubWindow's own body is already wrapped in verticalScroll, so this
+    // content doesn't need its own nested scroll container (a scroll-inside-
+    // scroll is what caused inner content to feel "stuck"/unscrollable before).
+    SubWindow(
+        title = "Push to GitHub",
+        onClose = onDismiss,
         confirmButton = {
             TextButton(
                 enabled = !isPushing && owner.isNotBlank() && repo.isNotBlank() && path.isNotBlank(),
@@ -320,5 +315,13 @@ private fun PushToGitHubDialog(
             ) { Text("Push") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
-    )
+    ) {
+        Column {
+            OutlinedTextField(value = owner, onValueChange = { owner = it }, label = { Text("Owner") }, modifier = Modifier.fillMaxWidth())
+            OutlinedTextField(value = repo, onValueChange = { repo = it }, label = { Text("Repository") }, modifier = Modifier.fillMaxWidth().padding(top = 6.dp))
+            OutlinedTextField(value = branch, onValueChange = { branch = it }, label = { Text("Branch") }, modifier = Modifier.fillMaxWidth().padding(top = 6.dp))
+            OutlinedTextField(value = path, onValueChange = { path = it }, label = { Text("File path (e.g. src/main.py)") }, modifier = Modifier.fillMaxWidth().padding(top = 6.dp))
+            OutlinedTextField(value = message, onValueChange = { message = it }, label = { Text("Commit message") }, modifier = Modifier.fillMaxWidth().padding(top = 6.dp))
+        }
+    }
 }

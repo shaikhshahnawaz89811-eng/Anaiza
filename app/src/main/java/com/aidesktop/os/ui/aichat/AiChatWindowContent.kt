@@ -83,6 +83,29 @@ private fun ChatBody(viewModel: AiChatViewModel) {
     var input by remember { mutableStateOf("") }
 
     Column(modifier = Modifier.fillMaxSize()) {
+        // Compact status row — visible whether this window is the full chat
+        // overlay or the short 20%-height docked panel, so the panel always
+        // shows both the chat AND a one-line status of what the AI is doing.
+        viewModel.statusText.value?.let { status ->
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(DesktopSurfaceHigh)
+                    .padding(horizontal = 10.dp, vertical = 4.dp)
+            ) {
+                if (viewModel.isSending.value) {
+                    CircularProgressIndicator(modifier = Modifier.size(12.dp), strokeWidth = 2.dp)
+                    Box(modifier = Modifier.padding(start = 6.dp))
+                }
+                Text(
+                    text = status,
+                    color = TextSecondary,
+                    style = MaterialTheme.typography.labelSmall,
+                    maxLines = 1
+                )
+            }
+        }
         LazyColumn(
             modifier = Modifier.weight(1f).fillMaxWidth().padding(10.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)

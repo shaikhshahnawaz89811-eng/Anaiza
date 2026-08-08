@@ -119,6 +119,7 @@ object YouTubeAutomation {
                     return;
                 }
                 var titleEl = document.querySelector('h1.ytd-watch-metadata yt-formatted-string, h1.title yt-formatted-string');
+                if (player.paused) { player.play().catch(function() {}); }
                 startAdWatcher();
                 finish({status: "playing", title: (titleEl ? titleEl.textContent : '').trim().slice(0, 140)});
             }
@@ -198,6 +199,7 @@ object YouTubeAutomation {
                     setTimeout(function() { step2_confirmPlaying(title, attemptsLeft - 1); }, 300);
                     return;
                 }
+                if (player.paused) { player.play().catch(function() {}); }
                 startAdWatcher();
                 finish({status: "playing", title: title.trim().slice(0, 120)});
             }
