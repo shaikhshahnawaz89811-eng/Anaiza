@@ -119,10 +119,7 @@ class AiToolExecutor @Inject constructor(
             }
             else -> "Unknown action: $toolName."
         }
-    } catch (e: Exception) {
-        "Couldn't complete that action (${e.message ?: "unknown error"})."
     }
-}
 
     private inline fun withApp(argumentsJson: String, field: String, block: (AppKind) -> String): String {
         val app = parseAppKind(argField(argumentsJson, field)) ?: return "Didn't recognize which app that was."
