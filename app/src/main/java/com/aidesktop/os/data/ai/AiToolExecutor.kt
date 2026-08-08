@@ -29,99 +29,102 @@ class AiToolExecutor @Inject constructor(
 ) {
     private val gson = Gson()
 
-    suspend fun execute(toolName: String, argumentsJson: String): String = try {
-        when (toolName) {
-            "open_app" -> withApp(argumentsJson, "app") { app ->
-                desktopController.openApp(app)
-                "Opened ${app.displayName()}."
-            }
-            "close_app" -> withApp(argumentsJson, "app") { app ->
-                desktopController.closeByKind(app)
-                "Closed ${app.displayName()}."
-            }
-            "minimize_app" -> withApp(argumentsJson, "app") { app ->
-                desktopController.minimizeByKind(app)
-                "Minimized ${app.displayName()}."
-            }
-            "restore_app" -> withApp(argumentsJson, "app") { app ->
-                desktopController.restoreByKind(app)
-                "Restored ${app.displayName()}."
-            }
-            "browser_open_url" -> {
-                val url = argField(argumentsJson, "url")
-                if (url.isNullOrBlank()) return@try "No URL was given."
-                openBrowserAndNavigate(normalizeUrl(url))
-                "Opened Browser and navigated to $url."
-            }
-            "browser_search" -> {
-                val query = argField(argumentsJson, "query")
-                if (query.isNullOrBlank()) return@try "No search query was given."
-                openBrowserAndNavigate("https://www.google.com/search?q=${encode(query)}")
-                "Opened Browser and searched Google for \"$query\"."
-            }
-            "youtube_play" -> {
-                val query = argField(argumentsJson, "query")
-                if (query.isNullOrBlank()) return@try "No search query was given."
-                playOnYouTube(query)
-            }
-            "youtube_preview_search" -> {
-                val query = argField(argumentsJson, "query")
-                if (query.isNullOrBlank()) return@try "No search query was given."
-                previewYouTubeSearch(query)
-            }
-            "youtube_play_url" -> {
-                val url = argField(argumentsJson, "url")
-                val title = argField(argumentsJson, "title").orEmpty()
-                if (url.isNullOrBlank()) return@try "No video URL was given."
-                playYouTubeUrl(url, title)
-            }
-            "youtube_search" -> {
-                val query = argField(argumentsJson, "query")
-                if (query.isNullOrBlank()) return@try "No search query was given."
-                openBrowserAndNavigate("https://www.youtube.com/results?search_query=${encode(query)}")
-                "Opened Browser and searched YouTube for \"$query\". You'll need to tap a video to play it — " +
-                    "I can't auto-play, auto-skip ads, or tell when a video is about to end."
-            }
-            "whatsapp_send_message" -> {
-                val contactName = argField(argumentsJson, "contact_name")
-                val message = argField(argumentsJson, "message")
-                if (contactName.isNullOrBlank()) return@try "No contact name was given."
-                if (message.isNullOrBlank()) return@try "No message text was given."
-                sendWhatsAppMessage(contactName, message)
-            }
-            "split_screen" -> {
-                val leftApp = parseAppKind(argField(argumentsJson, "left_app"))
-                val rightApp = parseAppKind(argField(argumentsJson, "right_app"))
-                if (leftApp == null || rightApp == null) return@try "Couldn't recognize one of those app names."
-                desktopController.splitTwoApps(leftApp, rightApp)
-                "Split the screen: ${leftApp.displayName()} on the left, ${rightApp.displayName()} on the right."
-            }
-            "create_project" -> {
-                val name = argField(argumentsJson, "name")
-                if (name.isNullOrBlank()) return@try "A project needs a name."
-                projectRepository.saveProject(
-                    ProjectEntity(
-                        name = name,
-                        description = argField(argumentsJson, "description").orEmpty(),
-                        repositoryUrl = argField(argumentsJson, "repo_url").orEmpty(),
-                        progressPercent = 0,
-                        buildStatus = "Not built",
-                        notes = ""
+    suspend fun execute(toolName: String, argumentsJson: String): String {
+        return try {
+            when (toolName) {
+                "open_app" -> withApp(argumentsJson, "app") { app ->
+                    desktopController.openApp(app)
+                    "Opened ${app.displayName()}."
+                }
+                "close_app" -> withApp(argumentsJson, "app") { app ->
+                    desktopController.closeByKind(app)
+                    "Closed ${app.displayName()}."
+                }
+                "minimize_app" -> withApp(argumentsJson, "app") { app ->
+                    desktopController.minimizeByKind(app)
+                    "Minimized ${app.displayName()}."
+                }
+                "restore_app" -> withApp(argumentsJson, "app") { app ->
+                    desktopController.restoreByKind(app)
+                    "Restored ${app.displayName()}."
+                }
+                "browser_open_url" -> {
+                    val url = argField(argumentsJson, "url")
+                    if (url.isNullOrBlank()) return "No URL was given."
+                    openBrowserAndNavigate(normalizeUrl(url))
+                    "Opened Browser and navigated to $url."
+                }
+                "browser_search" -> {
+                    val query = argField(argumentsJson, "query")
+                    if (query.isNullOrBlank()) return "No search query was given."
+                    openBrowserAndNavigate("https://www.google.com/search?q=${encode(query)}")
+                    "Opened Browser and searched Google for \"$query\"."
+                }
+                "youtube_play" -> {
+                    val query = argField(argumentsJson, "query")
+                    if (query.isNullOrBlank()) return "No search query was given."
+                    playOnYouTube(query)
+                }
+                "youtube_preview_search" -> {
+                    val query = argField(argumentsJson, "query")
+                    if (query.isNullOrBlank()) return "No search query was given."
+                    previewYouTubeSearch(query)
+                }
+                "youtube_play_url" -> {
+                    val url = argField(argumentsJson, "url")
+                    val title = argField(argumentsJson, "title").orEmpty()
+                    if (url.isNullOrBlank()) return "No video URL was given."
+                    playYouTubeUrl(url, title)
+                }
+                "youtube_search" -> {
+                    val query = argField(argumentsJson, "query")
+                    if (query.isNullOrBlank()) return "No search query was given."
+                    openBrowserAndNavigate("https://www.youtube.com/results?search_query=${encode(query)}")
+                    "Opened Browser and searched YouTube for \"$query\". You'll need to tap a video to play it — " +
+                        "I can't auto-play, auto-skip ads, or tell when a video is about to end."
+                }
+                "whatsapp_send_message" -> {
+                    val contactName = argField(argumentsJson, "contact_name")
+                    val message = argField(argumentsJson, "message")
+                    if (contactName.isNullOrBlank()) return "No contact name was given."
+                    if (message.isNullOrBlank()) return "No message text was given."
+                    sendWhatsAppMessage(contactName, message)
+                }
+                "split_screen" -> {
+                    val leftApp = parseAppKind(argField(argumentsJson, "left_app"))
+                    val rightApp = parseAppKind(argField(argumentsJson, "right_app"))
+                    if (leftApp == null || rightApp == null) {
+                        return "Couldn't recognize one of those app names."
+                    }
+                    desktopController.splitTwoApps(leftApp, rightApp)
+                    "Split the screen: ${leftApp.displayName()} on the left, ${rightApp.displayName()} on the right."
+                }
+                "create_project" -> {
+                    val name = argField(argumentsJson, "name")
+                    if (name.isNullOrBlank()) return "A project needs a name."
+                    projectRepository.saveProject(
+                        ProjectEntity(
+                            name = name,
+                            description = argField(argumentsJson, "description").orEmpty(),
+                            repositoryUrl = argField(argumentsJson, "repo_url").orEmpty(),
+                            progressPercent = 0,
+                            buildStatus = "Not built",
+                            notes = ""
+                        )
                     )
-                )
-                desktopController.openApp(AppKind.PROJECTS)
-                "Created project \"$name\" and opened Projects."
+                    desktopController.openApp(AppKind.PROJECTS)
+                    "Created project \"$name\" and opened Projects."
+                }
+                "news_search" -> {
+                    val topic = argField(argumentsJson, "topic")
+                    if (topic.isNullOrBlank()) return "No news topic was given."
+                    searchNews(topic)
+                }
+                else -> "Unknown action: $toolName."
             }
-            "news_search" -> {
-                val topic = argField(argumentsJson, "topic")
-                if (topic.isNullOrBlank()) return@try "No news topic was given."
-                searchNews(topic)
-            }
-            else -> "Unknown action: $toolName."
+        } catch (e: Exception) {
+            "Couldn't complete that action (${e.message ?: "unknown error"})."
         }
-    }
-    } catch (e: Exception) {
-        "Couldn't complete that action (${e.message ?: "unknown error"})."
     }
 
     private inline fun withApp(argumentsJson: String, field: String, block: (AppKind) -> String): String {
