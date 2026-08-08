@@ -1,5 +1,10 @@
 package com.aidesktop.os.ui.browser
 
+private const val DESKTOP_USER_AGENT =
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 " +
+    "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+
+
 import android.annotation.SuppressLint
 import android.view.ViewGroup
 import android.webkit.CookieManager
@@ -49,7 +54,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.aidesktop.os.domain.model.DESKTOP_USER_AGENT
 import com.aidesktop.os.ui.theme.AccentBlue
 import com.aidesktop.os.ui.theme.DesktopSurface
 import com.aidesktop.os.ui.theme.DesktopSurfaceElevated
