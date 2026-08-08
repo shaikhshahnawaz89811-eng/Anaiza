@@ -1,0 +1,42 @@
+package com.aidesktop.os.domain.model
+
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.vector.ImageVector
+
+/** Identifies which mini-app a desktop window is hosting. */
+enum class AppKind {
+    BROWSER,
+    AI_CHAT,
+    PROJECTS,
+    FILE_MANAGER,
+    CODE_RUNNER,
+    SETTINGS,
+    ACCOUNTS
+}
+
+/** Which visual state a window is currently in. */
+enum class WindowVisualState {
+    NORMAL,
+    MAXIMIZED,
+    MINIMIZED
+}
+
+/** Runtime state for a single desktop window. Lives in DesktopViewModel, not persisted. */
+data class WindowState(
+    val id: String,
+    val kind: AppKind,
+    val title: String,
+    val icon: ImageVector,
+    var position: Offset = Offset(80f, 80f),
+    var size: Size = Size(420f, 300f),
+    var visualState: WindowVisualState = WindowVisualState.NORMAL,
+    var zIndex: Int = 0,
+    // Remembers geometry from before maximizing, to restore on un-maximize
+    var restorePosition: Offset? = null,
+    var restoreSize: Size? = null,
+    // Which half of a split-screen layout this window occupies, if any
+    var splitSlot: SplitSlot? = null
+)
+
+enum class SplitSlot { LEFT, RIGHT, NONE }

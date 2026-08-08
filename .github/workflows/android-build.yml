@@ -1,0 +1,39 @@
+name: Build APK
+
+# Runs on every push and PR so pushing this project to GitHub (or updating it)
+# actually produces a downloadable APK — this workflow did not exist before.
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      # Uses Gradle directly (no gradlew wrapper jar is committed to this repo),
+      # and caches dependencies between runs.
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: "8.7"
+
+      - name: Build debug APK
+        run: gradle assembleDebug --stacktrace
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AiDesktopOS-debug-apk
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
