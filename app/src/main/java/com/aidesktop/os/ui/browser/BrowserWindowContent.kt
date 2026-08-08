@@ -9,6 +9,7 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.runtime.DisposableEffect
 import com.aidesktop.os.data.BrowserController
+import com.aidesktop.os.data.ai.YouTubeAutomation
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -262,6 +263,22 @@ private fun SingleTabWebView(viewModel: BrowserViewModel, tabId: String, isActiv
                     override fun onPageFinished(view: WebView, url: String) {
                         viewModel.onPageLoaded(tabId, url, view.title ?: url)
                         CookieManager.getInstance().flush()
+                        // Real ad-skip coverage for ANY youtube.com session in this
+                        // tab, not just ones the AI started: this fires on every full
+                        // page load (search results, home, a directly-opened watch
+                        // link), and the installed watcher itself keeps running and
+                        // polling the live DOM afterwards — including once the user
+                        // taps into a video themselves via YouTube's own in-page
+                        // (non-reloading) navigation, since the interval it starts
+                        // just keeps checking the page for as long as it stays open.
+                        // installAdWatcher() is idempotent (guarded by a window flag),
+                        // so it's safe even if the AI's own play scripts also call it.
+                        if (url.contains("youtube.com", ignoreCase = true)) {
+                            view.evaluateJavascript(
+                                "(function(){${YouTubeAutomation.adWatcherInstallJs}\ninstallAdWatcher();})();",
+                                null
+                            )
+                        }
                     }
                 }
                 loadUrl(tab.url)
