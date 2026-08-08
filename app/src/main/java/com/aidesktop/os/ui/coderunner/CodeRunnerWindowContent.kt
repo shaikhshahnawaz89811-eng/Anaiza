@@ -185,7 +185,7 @@ private fun RuntimeChip(runtime: PistonRuntime, isSelected: Boolean, onClick: ()
 }
 
 private fun Modifier.clickableChip(onClick: () -> Unit): Modifier =
-    this.then(androidx.compose.foundation.clickable(onClick = onClick))
+    this.clickable(onClick = onClick)
 
 @Composable
 private fun GitHubTokenDialog(
