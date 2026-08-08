@@ -1,9 +1,5 @@
 package com.aidesktop.os.ui.browser
 
-private const val DESKTOP_USER_AGENT =
-    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 " +
-    "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
-
 
 import android.annotation.SuppressLint
 import android.view.ViewGroup
@@ -61,6 +57,10 @@ import com.aidesktop.os.ui.theme.DesktopSurfaceHigh
 import com.aidesktop.os.ui.theme.TaskbarBg
 import com.aidesktop.os.ui.theme.TextPrimary
 import com.aidesktop.os.ui.theme.TextSecondary
+
+private const val DESKTOP_USER_AGENT =
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 " +
+    "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
 
 @Composable
 fun BrowserWindowContent(viewModel: BrowserViewModel = hiltViewModel()) {
