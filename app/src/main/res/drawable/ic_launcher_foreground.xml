@@ -3,7 +3,37 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+    <!-- Monitor / desktop-window glyph in the app's accent blue, on the
+         adaptive-icon safe zone (center 66dp circle), matching the
+         AI Desktop OS theme instead of a blank placeholder square. -->
     <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M30,30h48v48h-48z" />
+        android:fillColor="#3E8BFF"
+        android:pathData="M24,32 h60 a4,4 0 0 1 4,4 v36 a4,4 0 0 1 -4,4 h-60 a4,4 0 0 1 -4,-4 v-36 a4,4 0 0 1 4,-4 z" />
+    <path
+        android:fillColor="#0F1524"
+        android:pathData="M24,32 h60 a4,4 0 0 1 4,4 v8 h-68 v-8 a4,4 0 0 1 4,-4 z" />
+    <path
+        android:fillColor="#E5484D"
+        android:pathData="M29,38 m-2,0 a2,2 0 1 0 4,0 a2,2 0 1 0 -4,0" />
+    <path
+        android:fillColor="#F5A623"
+        android:pathData="M37,38 m-2,0 a2,2 0 1 0 4,0 a2,2 0 1 0 -4,0" />
+    <path
+        android:fillColor="#2ECC71"
+        android:pathData="M45,38 m-2,0 a2,2 0 1 0 4,0 a2,2 0 1 0 -4,0" />
+    <path
+        android:fillColor="#EAF0FB"
+        android:pathData="M32,50 h40 v4 h-40 z" />
+    <path
+        android:fillColor="#97A3BF"
+        android:pathData="M32,58 h28 v3 h-28 z" />
+    <path
+        android:fillColor="#97A3BF"
+        android:pathData="M32,64 h34 v3 h-34 z" />
+    <path
+        android:fillColor="#3E8BFF"
+        android:pathData="M46,76 h16 v6 h-16 z" />
+    <path
+        android:fillColor="#EAF0FB"
+        android:pathData="M38,82 h32 a2,2 0 0 1 2,2 v2 h-36 v-2 a2,2 0 0 1 2,-2 z" />
 </vector>

@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.app.ActivityManager
 import android.media.AudioManager
 import android.net.ConnectivityManager
 import android.net.Network
@@ -36,6 +37,14 @@ import java.util.Locale
  *   - [network]      from ConnectivityManager's live NetworkCallback,
  *                    reporting WIFI / CELLULAR / NONE as they actually change
  *   - [isMuted]      from AudioManager's real ringer mode
+ *   - [ramUsedPct]   real device RAM usage from ActivityManager.MemoryInfo
+ *                    (totalMem/availMem) — the same source Android's own
+ *                    task manager uses; no special permission needed
+ *   - [cpuText]      per-core CPU load isn't readable by a normal app on
+ *                    modern Android without root/READ_PROCFS, so this is
+ *                    left as an honest "—" placeholder (not a made-up
+ *                    number) until a real source (e.g. a Termux/root helper)
+ *                    is wired in
  */
 data class SystemStatus(
     val timeText: String,
@@ -43,7 +52,9 @@ data class SystemStatus(
     val batteryPct: Int,
     val isCharging: Boolean,
     val network: NetworkKind,
-    val isMuted: Boolean
+    val isMuted: Boolean,
+    val ramUsedPct: Int,
+    val cpuText: String = "—"
 )
 
 enum class NetworkKind { WIFI, CELLULAR, NONE }
@@ -58,6 +69,7 @@ fun rememberSystemStatus(): SystemStatus {
     var isCharging by remember { mutableStateOf(readIsChargingNow(context)) }
     var network by remember { mutableStateOf(readNetworkKindNow(context)) }
     var isMuted by remember { mutableStateOf(readIsMutedNow(context)) }
+    var ramUsedPct by remember { mutableStateOf(readRamUsedPercentNow(context)) }
 
     // Live clock: recompute every real second, so the taskbar never shows a
     // stale time frozen at whenever the window happened to last recompose.
@@ -67,6 +79,16 @@ fun rememberSystemStatus(): SystemStatus {
             timeText = formatTime()
             dateText = formatDate()
             delay(1000L)
+        }
+    }
+
+    // RAM: real ActivityManager.MemoryInfo snapshot, refreshed periodically
+    // (there's no change-broadcast for memory pressure the way there is for
+    // battery, so this polls every few seconds like Android's own monitors do).
+    LaunchedEffect(context) {
+        while (isActive) {
+            ramUsedPct = readRamUsedPercentNow(context)
+            delay(4000L)
         }
     }
 
@@ -119,7 +141,7 @@ fun rememberSystemStatus(): SystemStatus {
         onDispose { context.unregisterReceiver(receiver) }
     }
 
-    return SystemStatus(timeText, dateText, batteryPct, isCharging, network, isMuted)
+    return SystemStatus(timeText, dateText, batteryPct, isCharging, network, isMuted, ramUsedPct)
 }
 
 private fun formatTime(): String = SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date())
@@ -165,4 +187,14 @@ private fun readNetworkKindNow(context: Context): NetworkKind {
 private fun readIsMutedNow(context: Context): Boolean {
     val am = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     return am.ringerMode != AudioManager.RINGER_MODE_NORMAL
+}
+
+/** Real device-wide RAM usage percent via ActivityManager.MemoryInfo (no permission required). */
+private fun readRamUsedPercentNow(context: Context): Int {
+    val am = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+    val info = ActivityManager.MemoryInfo()
+    am.getMemoryInfo(info)
+    if (info.totalMem <= 0) return 0
+    val usedMem = info.totalMem - info.availMem
+    return ((usedMem * 100) / info.totalMem).toInt().coerceIn(0, 100)
 }

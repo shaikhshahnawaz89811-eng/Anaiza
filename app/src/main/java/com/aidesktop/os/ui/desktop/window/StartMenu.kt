@@ -22,7 +22,6 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.aidesktop.os.domain.model.AppKind
-import com.aidesktop.os.ui.theme.AccentBlue
 import com.aidesktop.os.ui.theme.DesktopSurfaceHigh
 import com.aidesktop.os.ui.theme.TextPrimary
 import com.aidesktop.os.ui.theme.TextSecondary
@@ -55,7 +54,7 @@ fun StartMenu(
                         .clickable { onAppClick(kind) }
                         .padding(horizontal = 16.dp, vertical = 10.dp)
                 ) {
-                    Icon(icon, contentDescription = null, tint = AccentBlue, modifier = Modifier.size(16.dp))
+                    AppTileIcon(kind = kind, icon = icon, size = 26.dp)
                     Text(
                         text = name,
                         color = TextPrimary,

@@ -379,9 +379,9 @@ class AiToolExecutor @Inject constructor(
         AppKind.BROWSER -> "Browser"
         AppKind.AI_CHAT -> "AI Assistant"
         AppKind.PROJECTS -> "Projects"
-        AppKind.FILE_MANAGER -> "File Manager"
-        AppKind.CODE_RUNNER -> "Code Runner"
+        AppKind.FILE_MANAGER -> "Files"
+        AppKind.CODE_RUNNER -> "Termux"
         AppKind.SETTINGS -> "Settings"
-        AppKind.ACCOUNTS -> "Accounts"
+        AppKind.ACCOUNTS -> "ID Vault"
     }
 }

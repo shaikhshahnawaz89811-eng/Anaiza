@@ -55,7 +55,7 @@ fun FileManagerWindowContent() {
     }
 
     Column(modifier = Modifier.fillMaxSize().background(DesktopSurfaceElevated).padding(12.dp)) {
-        Text("File Manager", color = TextPrimary, style = MaterialTheme.typography.titleLarge)
+        Text("Files", color = TextPrimary, style = MaterialTheme.typography.titleLarge)
         Row(modifier = Modifier.padding(top = 8.dp, bottom = 12.dp)) {
             Button(onClick = { pickFileLauncher.launch(arrayOf("*/*")) }) {
                 Text("Open File")

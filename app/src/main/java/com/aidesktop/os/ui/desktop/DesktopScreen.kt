@@ -5,9 +5,14 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -24,11 +29,19 @@ import com.aidesktop.os.ui.desktop.window.NotificationCenter
 import com.aidesktop.os.ui.desktop.window.StartMenu
 import com.aidesktop.os.ui.desktop.window.Taskbar
 import com.aidesktop.os.ui.desktop.WindowContentRouter
+import com.aidesktop.os.ui.theme.DesktopBackground
 
 /**
  * Full in-app "desktop" surface. Everything here is rendered inside this
  * Activity's own window — there is no SYSTEM_ALERT_WINDOW overlay and no
  * interaction with other apps' UI.
+ *
+ * The desktop is intentionally NOT full-screen: it's a windowed area that
+ * starts below the status bar / camera cutout and occupies 56% of the
+ * physical display height, matching the "mini live screen" preview on the
+ * home screen. Everything below (icons, windows, taskbar, popovers) is laid
+ * out and measured relative to this constrained box via BoxWithConstraints,
+ * so nothing — drag, resize, maximize, split-screen — can render outside it.
  */
 @Composable
 fun DesktopScreen(
@@ -37,18 +50,34 @@ fun DesktopScreen(
 ) {
     val windows = viewModel.windows
 
-    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(DesktopBackground)
+    ) {
+        BoxWithConstraints(
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .fillMaxWidth()
+                .windowInsetsPadding(WindowInsets.statusBars) // start below the camera/status bar, not glued to it
+                .fillMaxHeight(0.56f) // desktop surface occupies 56% of the display
+        ) {
         val desktopWidthDp = maxWidth
         val desktopHeightDp = maxHeight - 46.dp // minus taskbar
 
         // Keep the controller's notion of "how big is the desktop" current, so
         // an AI-triggered split_screen command (which has no layout of its own)
         // snaps windows to the real on-screen bounds instead of a guess.
-        val density = androidx.compose.ui.platform.LocalDensity.current
+        //
+        // NOTE: window.size is dp throughout the app (default window is
+        // Size(460f, 340f), lastKnownDesktopSize defaults to Size(1000f, 640f))
+        // so this must report dp values, not px — reporting px here made every
+        // maximized window render ~density-factor too large and spill off
+        // the physical screen.
         viewModel.onDesktopSizeMeasured(
             androidx.compose.ui.geometry.Size(
-                with(density) { desktopWidthDp.toPx() },
-                with(density) { desktopHeightDp.toPx() }
+                desktopWidthDp.value,
+                desktopHeightDp.value
             )
         )
 
@@ -74,13 +103,12 @@ fun DesktopScreen(
         // down (DesktopController.close removes it from `windows` entirely).
         windows.sortedBy { it.zIndex }.forEach { w ->
             val isMinimized = w.visualState == WindowVisualState.MINIMIZED
-            val density = androidx.compose.ui.platform.LocalDensity.current
 
             val displaySize = when {
                 isMinimized -> w.size // keep real size so the WebView doesn't get starved to 0px
                 w.visualState == WindowVisualState.MAXIMIZED -> androidx.compose.ui.geometry.Size(
-                    with(density) { desktopWidthDp.toPx() },
-                    with(density) { desktopHeightDp.toPx() }
+                    desktopWidthDp.value,
+                    desktopHeightDp.value
                 )
                 else -> w.size
             }
@@ -147,5 +175,6 @@ fun DesktopScreen(
                 onNotificationsClick = { viewModel.toggleNotificationCenter() }
             )
         }
+        } // end inner BoxWithConstraints (56%-height desktop surface)
     }
 }

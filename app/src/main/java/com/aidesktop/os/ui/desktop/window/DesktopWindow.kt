@@ -89,11 +89,11 @@ fun DesktopWindow(
                     }
                     .padding(horizontal = 10.dp)
             ) {
-                Icon(
-                    imageVector = window.icon,
-                    contentDescription = null,
-                    tint = TextSecondary,
-                    modifier = Modifier.size(15.dp)
+                AppTileIcon(
+                    kind = window.kind,
+                    icon = window.icon,
+                    size = 17.dp,
+                    cornerRadius = 4.dp
                 )
                 Text(
                     text = window.title,

@@ -34,25 +34,32 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.aidesktop.os.data.remote.PistonRuntime
-import com.aidesktop.os.ui.theme.AccentBlue
-import com.aidesktop.os.ui.theme.AccentGreen
 import com.aidesktop.os.ui.theme.AccentRed
-import com.aidesktop.os.ui.theme.DesktopSurfaceElevated
-import com.aidesktop.os.ui.theme.DesktopSurfaceHigh
-import com.aidesktop.os.ui.theme.DividerColor
-import com.aidesktop.os.ui.theme.TextPrimary
-import com.aidesktop.os.ui.theme.TextSecondary
 
 import androidx.compose.foundation.clickable
+
+// Termux-style terminal palette, local to this window only — real black
+// terminal background + classic terminal green, not the app's normal light
+// card surfaces. Purely visual; every value below still comes from the same
+// real ViewModel state (real Piston run, real GitHub push) as before.
+private val TerminalBg = Color(0xFF0B0F0C)
+private val TerminalPanelBg = Color(0xFF101512)
+private val TerminalGreen = Color(0xFF4AF626)
+private val TerminalDimGreen = Color(0xFF2E8B2E)
+private val TerminalText = Color(0xFFE4E7E4)
+private const val TerminalPrompt = "u0_a125@localhost:~$ "
+
 /**
  * Lets the user paste code (e.g. something the AI Assistant just suggested),
  * actually run it against the real Piston execution service, read the real
  * output, and — once they're happy with it — push it to GitHub as a real
- * commit. All inside the app, no other app needs to open.
+ * commit. All inside the app, no other app needs to open. Styled to look
+ * like a real Termux terminal session.
  */
 @Composable
 fun CodeRunnerWindowContent(viewModel: CodeRunnerViewModel = hiltViewModel()) {
@@ -61,16 +68,32 @@ fun CodeRunnerWindowContent(viewModel: CodeRunnerViewModel = hiltViewModel()) {
     var showPushDialog by remember { mutableStateOf(false) }
     var showTokenDialog by remember { mutableStateOf(false) }
 
-    Column(modifier = Modifier.fillMaxSize().background(DesktopSurfaceElevated).padding(12.dp)) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(TerminalBg)
+            .padding(12.dp)
+    ) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("Code Runner", color = TextPrimary, style = MaterialTheme.typography.titleLarge)
+            Text(
+                "Termux",
+                color = TerminalGreen,
+                fontFamily = FontFamily.Monospace,
+                style = MaterialTheme.typography.titleLarge
+            )
             TextButton(onClick = { showTokenDialog = true }) {
-                Text(if (viewModel.hasGitHubToken.value) "GitHub: connected" else "Connect GitHub")
+                Text(
+                    if (viewModel.hasGitHubToken.value) "github: connected" else "connect github",
+                    color = TerminalDimGreen,
+                    fontFamily = FontFamily.Monospace,
+                    style = MaterialTheme.typography.labelSmall
+                )
             }
         }
         Text(
-            "Runs your code for real via a sandboxed execution service, then you can push it to GitHub.",
-            color = TextSecondary,
+            "$TerminalPrompt neofetch --runtime",
+            color = TerminalDimGreen,
+            fontFamily = FontFamily.Monospace,
             style = MaterialTheme.typography.labelSmall,
             modifier = Modifier.padding(bottom = 8.dp)
         )
@@ -88,14 +111,29 @@ fun CodeRunnerWindowContent(viewModel: CodeRunnerViewModel = hiltViewModel()) {
         OutlinedTextField(
             value = viewModel.code.value,
             onValueChange = { viewModel.code.value = it },
-            label = { Text("Code") },
-            textStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+            label = { Text("code", color = TerminalDimGreen, fontFamily = FontFamily.Monospace) },
+            textStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace, color = TerminalText),
+            colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = TerminalPanelBg,
+                unfocusedContainerColor = TerminalPanelBg,
+                focusedBorderColor = TerminalDimGreen,
+                unfocusedBorderColor = TerminalDimGreen.copy(alpha = 0.4f),
+                cursorColor = TerminalGreen
+            ),
             modifier = Modifier.fillMaxWidth().height(160.dp)
         )
         OutlinedTextField(
             value = viewModel.stdin.value,
             onValueChange = { viewModel.stdin.value = it },
-            label = { Text("stdin (optional)") },
+            label = { Text("stdin (optional)", color = TerminalDimGreen, fontFamily = FontFamily.Monospace) },
+            textStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace, color = TerminalText),
+            colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = TerminalPanelBg,
+                unfocusedContainerColor = TerminalPanelBg,
+                focusedBorderColor = TerminalDimGreen,
+                unfocusedBorderColor = TerminalDimGreen.copy(alpha = 0.4f),
+                cursorColor = TerminalGreen
+            ),
             modifier = Modifier.fillMaxWidth().padding(top = 6.dp)
         )
 
@@ -106,7 +144,7 @@ fun CodeRunnerWindowContent(viewModel: CodeRunnerViewModel = hiltViewModel()) {
                 } else {
                     Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.padding(end = 4.dp))
                 }
-                Text("Run")
+                Text("run")
             }
             OutlinedButton(
                 onClick = { showPushDialog = true },
@@ -114,12 +152,18 @@ fun CodeRunnerWindowContent(viewModel: CodeRunnerViewModel = hiltViewModel()) {
                 enabled = viewModel.output.value != null
             ) {
                 Icon(Icons.Filled.CloudUpload, contentDescription = null, modifier = Modifier.padding(end = 4.dp))
-                Text("Push to GitHub")
+                Text("push")
             }
         }
 
         viewModel.runError.value?.let {
-            Text(it, color = AccentRed, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(top = 6.dp))
+            Text(
+                "$TerminalPrompt error: $it",
+                color = AccentRed,
+                fontFamily = FontFamily.Monospace,
+                style = MaterialTheme.typography.labelSmall,
+                modifier = Modifier.padding(top = 6.dp)
+            )
         }
 
         viewModel.output.value?.let { out ->
@@ -128,24 +172,39 @@ fun CodeRunnerWindowContent(viewModel: CodeRunnerViewModel = hiltViewModel()) {
                     .fillMaxWidth()
                     .padding(top = 8.dp)
                     .clip(RoundedCornerShape(8.dp))
-                    .background(DesktopSurfaceHigh)
+                    .background(TerminalPanelBg)
                     .padding(10.dp)
                     .verticalScroll(rememberScrollState())
             ) {
-                Text("Exit code: ${out.exitCode ?: "—"}", color = TextSecondary, style = MaterialTheme.typography.labelSmall)
+                Text(
+                    "$TerminalPrompt run",
+                    color = TerminalDimGreen,
+                    fontFamily = FontFamily.Monospace,
+                    style = MaterialTheme.typography.labelSmall
+                )
+                Text(
+                    "exit code: ${out.exitCode ?: "—"}",
+                    color = TerminalDimGreen,
+                    fontFamily = FontFamily.Monospace,
+                    style = MaterialTheme.typography.labelSmall
+                )
                 if (out.stdout.isNotBlank()) {
-                    Text("stdout", color = AccentGreen, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(top = 6.dp))
-                    Text(out.stdout, color = TextPrimary, fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodySmall)
+                    Text(out.stdout, color = TerminalText, fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodySmall)
                 }
                 if (out.stderr.isNotBlank()) {
-                    Text("stderr", color = AccentRed, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(top = 6.dp))
-                    Text(out.stderr, color = TextPrimary, fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodySmall)
+                    Text(out.stderr, color = AccentRed, fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodySmall)
                 }
             }
         }
 
         viewModel.pushMessage.value?.let {
-            Text(it, color = if (it.startsWith("Pushed")) AccentGreen else AccentRed, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(top = 6.dp))
+            Text(
+                "$TerminalPrompt $it",
+                color = if (it.startsWith("Pushed")) TerminalGreen else AccentRed,
+                fontFamily = FontFamily.Monospace,
+                style = MaterialTheme.typography.labelSmall,
+                modifier = Modifier.padding(top = 6.dp)
+            )
         }
     }
 
@@ -176,11 +235,16 @@ private fun RuntimeChip(runtime: PistonRuntime, isSelected: Boolean, onClick: ()
         modifier = Modifier
             .padding(end = 6.dp)
             .clip(RoundedCornerShape(6.dp))
-            .background(if (isSelected) AccentBlue else DividerColor)
+            .background(if (isSelected) TerminalDimGreen.copy(alpha = 0.35f) else TerminalPanelBg)
             .clickableChip(onClick)
             .padding(horizontal = 10.dp, vertical = 6.dp)
     ) {
-        Text("${runtime.language} ${runtime.version}", color = TextPrimary, style = MaterialTheme.typography.labelSmall)
+        Text(
+            "${runtime.language} ${runtime.version}",
+            color = if (isSelected) TerminalGreen else TerminalText,
+            fontFamily = FontFamily.Monospace,
+            style = MaterialTheme.typography.labelSmall
+        )
     }
 }
 
@@ -202,7 +266,7 @@ private fun GitHubTokenDialog(
             Column {
                 Text(
                     "Needs \"contents: write\" permission on the repos you'll push to. Stored encrypted on this device only.",
-                    color = TextSecondary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.labelSmall,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )

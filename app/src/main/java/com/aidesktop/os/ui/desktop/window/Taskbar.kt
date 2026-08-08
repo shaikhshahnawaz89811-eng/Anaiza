@@ -88,7 +88,7 @@ fun Taskbar(
                         .clickable { onWindowClick(w.id) }
                         .padding(horizontal = 10.dp, vertical = 6.dp)
                 ) {
-                    Icon(w.icon, contentDescription = null, tint = TextPrimary, modifier = Modifier.size(13.dp))
+                    AppTileIcon(kind = w.kind, icon = w.icon, size = 18.dp, cornerRadius = 5.dp)
                     Text(
                         text = w.title,
                         color = TextPrimary,
@@ -108,6 +108,23 @@ fun Taskbar(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(horizontal = 12.dp)
         ) {
+            // RAM: real value (ActivityManager.MemoryInfo). CPU: honest "—"
+            // placeholder — normal apps on modern Android can't read
+            // system-wide CPU load without root, so this stays empty on
+            // purpose rather than showing a made-up number, until a real
+            // source is wired in.
+            Text(
+                text = "RAM ${status.ramUsedPct}%",
+                color = TextSecondary,
+                style = MaterialTheme.typography.labelSmall
+            )
+            Text(
+                text = "CPU ${status.cpuText}",
+                color = TextSecondary,
+                style = MaterialTheme.typography.labelSmall,
+                modifier = Modifier.padding(start = 8.dp)
+            )
+
             val (networkIcon, networkTint) = when (status.network) {
                 NetworkKind.WIFI -> Icons.Filled.Wifi to TextSecondary
                 NetworkKind.CELLULAR -> Icons.Filled.SignalCellularAlt to TextSecondary
@@ -117,7 +134,7 @@ fun Taskbar(
                 networkIcon,
                 contentDescription = status.network.name,
                 tint = networkTint,
-                modifier = Modifier.size(15.dp)
+                modifier = Modifier.size(15.dp).padding(start = 8.dp)
             )
 
             Icon(
