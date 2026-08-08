@@ -29,7 +29,7 @@ class AiToolExecutor @Inject constructor(
 ) {
     private val gson = Gson()
 
-    suspend fun execute(toolName: String, argumentsJson: String): String = try {
+    suspend fun execute(toolName: String, argumentsJson: String): String {
         when (toolName) {
             "open_app" -> withApp(argumentsJson, "app") { app ->
                 desktopController.openApp(app)
@@ -122,6 +122,7 @@ class AiToolExecutor @Inject constructor(
     } catch (e: Exception) {
         "Couldn't complete that action (${e.message ?: "unknown error"})."
     }
+}
 
     private inline fun withApp(argumentsJson: String, field: String, block: (AppKind) -> String): String {
         val app = parseAppKind(argField(argumentsJson, field)) ?: return "Didn't recognize which app that was."

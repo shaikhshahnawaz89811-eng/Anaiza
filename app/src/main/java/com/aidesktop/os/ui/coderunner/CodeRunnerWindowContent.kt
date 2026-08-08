@@ -47,6 +47,7 @@ import com.aidesktop.os.ui.theme.DividerColor
 import com.aidesktop.os.ui.theme.TextPrimary
 import com.aidesktop.os.ui.theme.TextSecondary
 
+import androidx.compose.foundation.clickable
 /**
  * Lets the user paste code (e.g. something the AI Assistant just suggested),
  * actually run it against the real Piston execution service, read the real
